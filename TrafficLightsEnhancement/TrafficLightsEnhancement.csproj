@@ -7,7 +7,7 @@
 
         <AssemblyName>C2VM.TrafficLightsEnhancement</AssemblyName>
         <RootNamespace>C2VM.TrafficLightsEnhancement</RootNamespace>
-        <Version>0.3.0</Version>
+        <Version>0.3.1</Version>
 
         <!--The file where mod information which is required for publishing mod on PDX mods are stored-->
         <PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>

@@ -1,8 +1,28 @@
 ## Traffic Lights Enhancement
 
+## Fork / Unofficial build
+
+This repository is an **unofficial fork** of  
+[slyh/Cities2-TrafficLightsEnhancement](https://github.com/slyh/Cities2-TrafficLightsEnhancement).
+
+Goal of this fork: keep the mod running on **Cities: Skylines II 1.4.2f1** (“Bike” patch) until the original mod is updated.
+
+### Changes in this fork (0.3.1)
+
+- Prevent a potential **game crash on startup** when internal ECS queries change between game versions.
+- Add logging of the **game assembly version** for easier debugging across patches.
+- Wrap in a safe `try/catch` to avoid crashing on reflection failures.
+- **No gameplay / UI changes**, traffic light logic and features are identical to 0.3.0.
+
+
+### Download
+
+Binaries are available on the [Releases](../../releases) page. 
+Use the latest `v0.3.1-1.4.2-hotfix` release for CS2 1.4.2f1.
+
 * Set traffic lights to various predefined signal modes
 * Guide available [here](https://github.com/slyh/Cities2-TrafficLightsEnhancement/tree/master/GUIDE.md)
-* Compatible with version 1.3.3f1
+* Compatible with version 1.4.2f1
 
 This mod stores extra data in your saves to provide additional functionality. Once the mod is removed, traffic lights and junctions should revert to default settings when a road update is triggered, but this cannot be guaranteed.
 
