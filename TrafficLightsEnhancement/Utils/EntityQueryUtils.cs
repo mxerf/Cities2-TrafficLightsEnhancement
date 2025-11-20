@@ -1,6 +1,7 @@
 using System.Reflection;
 using Unity.Collections;
 using Unity.Entities;
+using C2VM.TrafficLightsEnhancement;
 
 namespace C2VM.TrafficLightsEnhancement.Utils
 {
@@ -20,9 +21,17 @@ namespace C2VM.TrafficLightsEnhancement.Utils
 
         public static void UpdateEntityQuery(SystemBase systemBase, string fieldName, NativeList<ComponentType> none)
         {
-            EntityQuery query = GetEntityQuery(systemBase, fieldName);
-            EntityQuery newQuery = GetEntityQueryBuilder(query, none).Build(systemBase);
-            SetEntityQuery(systemBase, fieldName, newQuery);
+            try
+            {
+                EntityQuery query = GetEntityQuery(systemBase, fieldName);
+                EntityQuery newQuery = GetEntityQueryBuilder(query, none).Build(systemBase);
+                SetEntityQuery(systemBase, fieldName, newQuery);
+            }
+            catch (System.Exception ex)
+            {
+                // Avoid crashing the game if the underlying query layout changes between versions
+                Mod.m_Log.Error($"EntityQueryUtils.UpdateEntityQuery failed for {systemBase?.GetType().FullName}.{fieldName}: {ex}");
+            }
         }
 
         public static EntityQueryBuilder GetEntityQueryBuilder(EntityQuery oldQuery, NativeList<ComponentType> none)

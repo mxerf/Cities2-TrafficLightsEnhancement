@@ -32,30 +32,73 @@ public class Mod : IMod
     {
         m_Log.Info($"Loading {m_Id} v{m_InformationalVersion}");
 
-        var outdatedType = System.Type.GetType("C2VM.TrafficLightsEnhancement.Plugin, C2VM.TrafficLightsEnhancement") ?? System.Type.GetType("C2VM.CommonLibraries.LaneSystem.Plugin, C2VM.CommonLibraries.LaneSystem");
-        if (outdatedType != null)
+        // Log basic game assembly version information for easier debugging across patches
+        try
         {
-            throw new System.Exception($"An outdated version of Traffic Lights Enhancement has been detected at {outdatedType.Assembly.Location}");
+            var gameAssembly = typeof(GameManager).Assembly;
+            var version = gameAssembly.GetName().Version?.ToString() ?? "<unknown>";
+            var infoAttr = (AssemblyInformationalVersionAttribute?)System.Attribute.GetCustomAttribute(gameAssembly, typeof(AssemblyInformationalVersionAttribute));
+            var info = infoAttr?.InformationalVersion ?? "<none>";
+            m_Log.Info($"Detected game assembly version: {version}, info: {info}");
+        }
+        catch (System.Exception ex)
+        {
+            m_Log.Info($"Failed to read game assembly version: {ex}");
         }
 
-        if (GameManager.instance.modManager.TryGetExecutableAsset(this, out var asset))
+        try
         {
-            m_Log.Info($"Current mod asset at {asset.path}");
+            var outdatedType = System.Type.GetType("C2VM.TrafficLightsEnhancement.Plugin, C2VM.TrafficLightsEnhancement") ?? System.Type.GetType("C2VM.CommonLibraries.LaneSystem.Plugin, C2VM.CommonLibraries.LaneSystem");
+            if (outdatedType != null)
+            {
+                throw new System.Exception($"An outdated version of Traffic Lights Enhancement has been detected at {outdatedType.Assembly.Location}");
+            }
+
+            if (GameManager.instance.modManager.TryGetExecutableAsset(this, out var asset))
+            {
+                m_Log.Info($"Current mod asset at {asset.path}");
+            }
+
+            m_World = updateSystem.World;
+
+            m_TrafficLightInitializationSystem = m_World.GetOrCreateSystemManaged<Game.Net.TrafficLightInitializationSystem>();
+            m_TrafficLightSystem = m_World.GetOrCreateSystemManaged<Game.Simulation.TrafficLightSystem>();
+            m_PatchedTrafficLightInitializationSystem = m_World.GetOrCreateSystemManaged<C2VM.TrafficLightsEnhancement.Systems.TrafficLightSystems.Initialisation.PatchedTrafficLightInitializationSystem>();
+            m_PatchedTrafficLightSystem = m_World.GetOrCreateSystemManaged<C2VM.TrafficLightsEnhancement.Systems.TrafficLightSystems.Simulation.PatchedTrafficLightSystem>();
+
+            m_Settings = new Settings(this);
+
+            SystemSetup(updateSystem);
+
+            string netToolSystemToolID = m_World.GetOrCreateSystemManaged<Game.Tools.NetToolSystem>().toolID;
+            Assert(netToolSystemToolID == "Net Tool", $"netToolSystemToolID: {netToolSystemToolID}");
         }
+        catch (System.Exception ex)
+        {
+            // Never crash the game from OnLoad – log and fall back to vanilla behaviour
+            m_Log.Error($"OnLoad failed, running in degraded compatibility mode. Exception: {ex}");
 
-        m_World = updateSystem.World;
-
-        m_TrafficLightInitializationSystem = m_World.GetOrCreateSystemManaged<Game.Net.TrafficLightInitializationSystem>();
-        m_TrafficLightSystem = m_World.GetOrCreateSystemManaged<Game.Simulation.TrafficLightSystem>();
-        m_PatchedTrafficLightInitializationSystem = m_World.GetOrCreateSystemManaged<C2VM.TrafficLightsEnhancement.Systems.TrafficLightSystems.Initialisation.PatchedTrafficLightInitializationSystem>();
-        m_PatchedTrafficLightSystem = m_World.GetOrCreateSystemManaged<C2VM.TrafficLightsEnhancement.Systems.TrafficLightSystems.Simulation.PatchedTrafficLightSystem>();
-
-        m_Settings = new Settings(this);
-
-        SystemSetup(updateSystem);
-
-        string netToolSystemToolID = m_World.GetOrCreateSystemManaged<Game.Tools.NetToolSystem>().toolID;
-        Assert(netToolSystemToolID == "Net Tool", $"netToolSystemToolID: {netToolSystemToolID}");
+            try
+            {
+                if (m_World != null)
+                {
+                    var initSystem = m_World.GetExistingSystemManaged<Game.Net.TrafficLightInitializationSystem>();
+                    var simSystem = m_World.GetExistingSystemManaged<Game.Simulation.TrafficLightSystem>();
+                    if (initSystem != null)
+                    {
+                        initSystem.Enabled = true;
+                    }
+                    if (simSystem != null)
+                    {
+                        simSystem.Enabled = true;
+                    }
+                }
+            }
+            catch (System.Exception recoveryEx)
+            {
+                m_Log.Error($"OnLoad recovery logic failed: {recoveryEx}");
+            }
+        }
     }
 
     public void OnDispose()
